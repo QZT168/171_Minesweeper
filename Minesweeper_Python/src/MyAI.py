@@ -22,8 +22,8 @@ class MyAI( AI ):
 		self.rowDimension = rowDimension
 		self.colDimension = colDimension
 		self.totalMines = totalMines
-		self.X = startX  # X = 0 means row 1
-		self.Y = startY  # Y = 0 means col 1
+		self.X = startX  # X = 0 means col 1
+		self.Y = startY  # Y = 0 means row 1
 		# Create a board to store the state
 		self.board = result = [[None for _ in range(self.colDimension)] for _ in range(self.rowDimension)]
 		# Store tiles that is not a mine and to be uncover
@@ -37,15 +37,16 @@ class MyAI( AI ):
 		# If current tile state is 0, all adjacent tiles are 0 as well.
 		if number == 0:
 			self.label_as_safe()
-		# if number > 0, check adjacent tiles' states
+		# If number > 0, check adjacent tiles' states
 		elif number > 0:
 			self.check_effective_label(self.X, self.Y, number)
-			for row in range(self.rowDimension):
-				for col in self.board[row]:
-					if col is not None and col > 0:
-						self.check_effective_label(col, row, col)
+		# Check effective label again after update the board state
+		for row in range(self.rowDimension):
+			for col in range(self.colDimension):
+				if (self.board[row][col] is not None) and (self.board[row][col] > 0) and (self.X != col or self.Y != row):
+					self.check_effective_label(col, row, self.board[row][col])
 		
-		# return Action()
+		# Return Action() according to different conditions
 		# If all non-mine tiles are found, leave
 		if self.uncover_count == self.colDimension * self.rowDimension - self.totalMines:
 			return Action(AI.Action.LEAVE, self.X, self.Y)
