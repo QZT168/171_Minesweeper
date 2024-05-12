@@ -39,7 +39,11 @@ class MyAI( AI ):
 			self.label_as_safe()
 		# if number > 0, check adjacent tiles' states
 		elif number > 0:
-			self.check_effective_label(number)
+			self.check_effective_label(self.X, self.Y, number)
+			for row in range(self.rowDimension):
+				for col in self.board[row]:
+					if col is not None and col > 0:
+						self.check_effective_label(col, row, col)
 		
 		# return Action()
 		# If all non-mine tiles are found, leave
@@ -66,14 +70,14 @@ class MyAI( AI ):
 						if (nearX, nearY) not in self.to_be_uncover:  # add to to_be_uncover list
 							self.to_be_uncover.append((nearX, nearY))
 
-	def check_effective_label(self, number):
+	def check_effective_label(self, x, y, number):
 		cover_tiles = []  # Store the adjacent tiles which are still covered.
 		count_flag = 0  # Count the number of adjacent tiles that has marked as mine
 		for dx in [-1, 0, 1]:
 			for dy in [-1, 0, 1]:
-				nearX = self.X + dx
-				nearY = self.Y + dy
-				if 0 <= nearX < self.colDimension and 0 <= nearY < self.rowDimension and (nearX != self.X or nearY != self.Y):
+				nearX = x + dx
+				nearY = y + dy
+				if 0 <= nearX < self.colDimension and 0 <= nearY < self.rowDimension and (nearX != x or nearY != y):
 					if self.board[nearY][nearX] == -1:
 						count_flag += 1
 					elif self.board[nearY][nearX] is None:
