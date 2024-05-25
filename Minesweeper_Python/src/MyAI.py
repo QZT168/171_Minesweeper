@@ -46,10 +46,10 @@ class MyAI( AI ):
 		# If number > 0, check adjacent tiles' states
 		elif number > 0:
 			self.check_effective_label(self.X, self.Y, covered)
-		# Check effective label again after update the board state
+		# Check effective label for other tiles after update the board state
 		for row in range(self.rowDimension):
 			for col in range(self.colDimension):
-				if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.X != col or self.Y != row):
+				if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.board[row][col][2] > 0) and (self.X != col or self.Y != row):
 					covers = self.update_effective_covered(col, row)
 					self.check_effective_label(col, row, covers)
 
