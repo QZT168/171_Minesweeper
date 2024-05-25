@@ -57,6 +57,14 @@ class MyAI( AI ):
 		# for i in range(self.rowDimension - 1, -1, -1):
 		# 	row = self.board[i]
 		# 	print("\t".join([f"{col[0]}:{col[1]}:{col[2]}" for col in row]))
+
+
+		if not self.to_be_uncover:
+			for row in range(self.rowDimension):
+				for col in range(self.colDimension):
+					if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.board[row][col][2] > 0) and (self.X != col or self.Y != row):
+						covers = self.update_effective_covered(col, row)
+						self.guess_action(covers)
 		
 		# Return Action() according to different conditions
 		# If all non-mine tiles are found, leave
@@ -64,7 +72,9 @@ class MyAI( AI ):
 			return Action(AI.Action.LEAVE, self.X, self.Y)
 		# If there's still a remaining non-mine tile, uncover
 		elif self.to_be_uncover:
+
 			# print(self.to_be_uncover)
+
 			self.X, self.Y = self.to_be_uncover.pop(0)
 			self.uncover_count += 1
 			# print(self.uncover_count)
@@ -81,8 +91,8 @@ class MyAI( AI ):
 				nearX = self.X + dx
 				nearY = self.Y + dy
 				# Check if the adjacent xy is inside the boundary and is not itself.
-				if 0 <= nearX < self.colDimension and 0 <= nearY < self.rowDimension and (nearX != self.X or nearY != self.Y):
-					if self.board[nearY][nearX][0] == '_':
+				if (0 <= nearX < self.colDimension) and (0 <= nearY < self.rowDimension) and (nearX != self.X or nearY != self.Y):
+					if self.board[nearY][nearX][0] == '_':  # cover now
 						self.board[nearY][nearX][0] = 0  # label as safe
 						if (nearX, nearY) not in self.to_be_uncover:  # add to to_be_uncover list
 							self.to_be_uncover.append((nearX, nearY))
@@ -96,15 +106,18 @@ class MyAI( AI ):
 				self.board[tile[1]][tile[0]][0] = 0  # tile[0] = x, tile[1] = y, board[y][x]
 				if (tile[0],tile[1]) not in self.to_be_uncover:
 					self.to_be_uncover.append( (tile[0],tile[1]) )  # append (x,y)
+			self.board[y][x][0] = 0
 			self.board[y][x][1] = 0  # update effectve label as 0
 			self.board[y][x][2] = 0  # remaining = 0
 		elif effective_label == len(covered):  # All the remaining tiles are mine
 			for tile in covered:
 				self.board[tile[1]][tile[0]][0] = -1  # labeled as mine
+			self.board[y][x][0] = 0
 			self.board[y][x][1] = 0  # update effectve label as 0
 			self.board[y][x][2] = 0  # remaining = 0
-		# else:  # need more mines
-	
+		# else:  # need more mines, guess by probability
+		# 	self.guess_action(covered)
+
 	def update_effective_covered(self, x, y):
 		cover_tiles = []  # Store the adjacent tiles which are still covered.
 		count_mines = 0
@@ -112,7 +125,7 @@ class MyAI( AI ):
 			for dy in [-1, 0, 1]:
 				nearX = x + dx
 				nearY = y + dy
-				if 0 <= nearX < self.colDimension and 0 <= nearY < self.rowDimension and (nearX != x or nearY != y):
+				if (0 <= nearX < self.colDimension) and (0 <= nearY < self.rowDimension) and (nearX != x or nearY != y):
 					if self.board[nearY][nearX][0] == -1:
 						count_mines += 1
 					elif self.board[nearY][nearX][0] == '_':
@@ -121,3 +134,23 @@ class MyAI( AI ):
 		self.board[y][x][2] = len(cover_tiles)  # update the current tile's adjacent counter
 		return cover_tiles
 
+	def guess_action(self, covered):
+		mine_prob = {}
+		for tile in covered:
+			prob = 0
+			x = tile[0]
+			y = tile[1]
+			for dx in [-1, 0, 1]:
+				for dy in [-1, 0, 1]:
+					nearX = x + dx
+					nearY = y + dy
+					if (0 <= nearX < self.colDimension) and (0 <= nearY < self.rowDimension) and (nearX != x or nearY != y) and (self.board[nearY][nearX][1] != ' ') and (self.board[nearY][nearX][1] > 0):
+						prob += 1
+			mine_prob[tile] = prob
+
+		min_prob_tile = min(mine_prob, key=mine_prob.get)
+		min_x = min_prob_tile[0]
+		min_y = min_prob_tile[1]
+
+		if (min_x, min_y) not in self.to_be_uncover:  # add to to_be_uncover list
+			self.to_be_uncover.append((min_x, min_y))
