@@ -32,6 +32,10 @@ class MyAI( AI ):
 		self.uncover_count = 1
 
 	def getAction(self, number: int) -> "Action Object":
+
+		# print("NUMBER:", number)
+		# print("SelfX:", self.X, "SelfY:", self.Y)
+
 		# Initilize the current tile state
 		self.board[self.Y][self.X] = number
 		# If current tile state is 0, all adjacent tiles are 0 as well.
@@ -45,6 +49,17 @@ class MyAI( AI ):
 			for col in range(self.colDimension):
 				if (self.board[row][col] is not None) and (self.board[row][col] > 0) and (self.X != col or self.Y != row):
 					self.check_effective_label(col, row, self.board[row][col])
+
+		# print board
+		# r = self.rowDimension - 1
+		# while r >= 0:
+		# 	for col in self.board[r]:
+		# 		if col is not None:
+		# 			print(col, end=",")
+		# 		else:
+		# 			print("_", end=",")
+		# 	print("")
+		# 	r -= 1
 		
 		# Return Action() according to different conditions
 		# If all non-mine tiles are found, leave
@@ -52,8 +67,12 @@ class MyAI( AI ):
 			return Action(AI.Action.LEAVE, self.X, self.Y)
 		# If there's still a remaining non-mine tile, uncover
 		elif self.to_be_uncover:
+			# print(self.to_be_uncover)
 			self.X, self.Y = self.to_be_uncover.pop(0)
 			self.uncover_count += 1
+			# print(self.uncover_count)
+			# print(self.X, self.Y)
+			# print("REAL:", self.X+1, self.Y+1)
 			return Action(AI.Action.UNCOVER, self.X, self.Y)
 		else:
 			return Action(AI.Action.LEAVE, self.X, self.Y)
@@ -88,6 +107,6 @@ class MyAI( AI ):
 				self.board[tile[1]][tile[0]] = 0  # tile[0] = x, tile[1] = y, board[y][x]
 				if (tile[0],tile[1]) not in self.to_be_uncover:
 					self.to_be_uncover.append( (tile[0],tile[1]) )  # append (x,y)
-		if len(cover_tiles) == number - count_flag:  # All the remaining tiles are mine
+		elif len(cover_tiles) == number - count_flag:  # All the remaining tiles are mine
 			for tile in cover_tiles:
 				self.board[tile[1]][tile[0]] = -1
