@@ -35,10 +35,6 @@ class MyAI( AI ):
 		self.uncover_count = 1
 
 	def getAction(self, number: int) -> "Action Object":
-
-		# print("NUMBER:", number)
-		# print("SelfX:", self.X, "SelfY:", self.Y)
-
 		# Initilize the current tile state
 		self.board[self.Y][self.X][0] = number
 		covered = self.update_effective_covered(self.X, self.Y)  # update the effectiveLabel and coveredCounter
@@ -57,12 +53,6 @@ class MyAI( AI ):
 					self.check_effective_label(col, row, covers)
 					self.update_effective_covered(col, row)
 
-		# print board
-		# for i in range(self.rowDimension - 1, -1, -1):
-		# 	row = self.board[i]
-		# 	print("\t".join([f"{col[0]}:{col[1]}:{col[2]}" for col in row]))
-
-
 		if (not self.to_be_uncover) and (self.uncover_count != self.colDimension * self.rowDimension - self.totalMines):
 			self.special_case()
 			if (not self.to_be_uncover):
@@ -71,7 +61,6 @@ class MyAI( AI ):
 					for col in range(self.colDimension):
 						if (self.board[row][col][0] == '_'):
 							remains.append((col, row))
-				# print(remains)
 				self.guess_action(remains)
 		
 		# Return Action() according to different conditions
@@ -80,24 +69,9 @@ class MyAI( AI ):
 			return Action(AI.Action.LEAVE, self.X, self.Y)
 		# If there's still a remaining non-mine tile, uncover
 		elif self.to_be_uncover:
-
-			# print(self.to_be_uncover)
-
 			self.X, self.Y = self.to_be_uncover.pop(0)
 			self.uncover_count += 1
-			# print(self.uncover_count)
-			# print(self.X, self.Y)
-			# print("REAL:", self.X+1, self.Y+1)
 			return Action(AI.Action.UNCOVER, self.X, self.Y)
-		# elif (not self.to_be_uncover) and (self.uncover_count != self.colDimension * self.rowDimension - self.totalMines):
-		# 	remains = []
-		# 	for row in range(self.rowDimension):
-		# 		for col in range(self.colDimension):
-		# 			if (self.board[row][col][0] == '_'):
-		# 				remains.append((col, row))
-		# 	# print(f"remains: {remains}")
-		# 	self.X, self.Y = self.model_check(remains)
-		# 	return Action(AI.Action.UNCOVER, self.X, self.Y)
 		else:
 			return Action(AI.Action.LEAVE, self.X, self.Y)
 		
@@ -133,8 +107,6 @@ class MyAI( AI ):
 			self.board[y][x][0] = 0
 			self.board[y][x][1] = 0  # update effectve label as 0
 			self.board[y][x][2] = 0  # remaining = 0
-		# else:  # need more mines, guess by probability
-		# 	self.guess_action(covered)
 
 	def update_effective_covered(self, x, y):
 		cover_tiles = []  # Store the adjacent tiles which are still covered.
@@ -181,7 +153,7 @@ class MyAI( AI ):
 			self.to_be_uncover.append((min_x, min_y))
 	
 	def special_case(self):
-		or_list = []
+		or_list = []  # if (A or B) and (A or B or C), then C = 0(safe)
 		safes = []
 		for row in range(self.rowDimension):
 			for col in range(self.colDimension):
@@ -189,7 +161,9 @@ class MyAI( AI ):
 				if (self.board[row][col][1] == 1) and (self.board[row][col][2] > 1):
 					covered = self.update_effective_covered(col, row)
 					or_list.append(covered)
+		# sort orlist
 		or_list.sort(key=len)
+		# check if the short one is included by the longer one
 		for i in range(len(or_list)):
 			for j in range(1, len(or_list)):
 				include = True
@@ -197,60 +171,10 @@ class MyAI( AI ):
 					if ele not in or_list[j]:
 						include = False
 						break
-				if include == True:
+				if include == True:  # shorter one is included by the longer one
 					for ele in or_list[j]:
 						if ele not in or_list[i]:
-							safes.append(ele)
+							safes.append(ele)  # the longer different ones are safe
 		for safe in safes:
 			if safe not in self.to_be_uncover:
 				self.to_be_uncover.append(safe)
-
-	
-	# def model_check(self, covered):
-	# 	print("model_check")
-	# 	# generate all assignment combinations
-	# 	all_assignments = list(itertools.product([0, -1], repeat=len(covered)))
-	# 	valid_assignments = []
-	# 	mine_probs = {}
-	# 	# find valid assignments
-	# 	for assign in all_assignments:
-	# 		print("check assign:", assign)
-	# 		for i in range(len(covered)):
-	# 			x = covered[i][0]
-	# 			y = covered[i][1]
-	# 			self.board[y][x][0] = assign[i]
-	# 		if self.is_valid(assign):
-	# 			valid_assignments.append(assign)
-	# 		# recover to original state (covered)
-	# 		for i in range(len(covered)):
-	# 			x = covered[i][0]
-	# 			y = covered[i][1]
-	# 			self.board[y][x][0] = '_'
-	# 	# calculate prob of mine for each covered tiles
-	# 	for j in range(len(covered)):
-	# 		prob = 0
-	# 		for valid in valid_assignments:
-	# 			if valid[j] == -1:
-	# 				prob += 1
-	# 		mine_probs[covered[j]] = prob
-	# 	# choose min_prob_tile
-	# 	print(f"mine_probs: {mine_probs}")
-	# 	min_prob_tile = min(mine_probs, key=mine_probs.get)
-	# 	print(f"min_prob_tile: {min_prob_tile}")
-	# 	min_x = min_prob_tile[0]
-	# 	min_y = min_prob_tile[1]
-
-	# 	# if (min_x, min_y) not in self.to_be_uncover:  # add to to_be_uncover list
-	# 	# 	self.to_be_uncover.append((min_x, min_y))
-	# 	return (min_x, min_y)
-
-	
-	# def is_valid(self, assignment):
-	# 	for row in range(self.rowDimension):
-	# 		for col in range(self.colDimension):
-	# 			# check uncover tiles with number > 0, effective label > 0
-	# 			if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.board[row][col][1] > 0) and (self.X != col or self.Y != row):
-	# 				checked_valid = self.update_effective_covered(col, row)
-	# 				if checked_valid == [-1]:
-	# 					return False
-	# 	return True
