@@ -35,10 +35,6 @@ class MyAI( AI ):
 		self.uncover_count = 1
 
 	def getAction(self, number: int) -> "Action Object":
-
-		# print("NUMBER:", number)
-		# print("SelfX:", self.X, "SelfY:", self.Y)
-
 		# Initilize the current tile state
 		self.board[self.Y][self.X][0] = number
 		covered = self.update_effective_covered(self.X, self.Y)  # update the effectiveLabel and coveredCounter
@@ -54,8 +50,8 @@ class MyAI( AI ):
 				# check uncover tiles with remaining adjacent tiles > 0
 				if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.board[row][col][2] > 0) and (self.X != col or self.Y != row):
 					covers = self.update_effective_covered(col, row)
-					self.check_effective_label(col, row, covers)
-					self.update_effective_covered(col, row)
+					if covers:
+						self.check_effective_label(col, row, covers)
 
 		# print board
 		# for i in range(self.rowDimension - 1, -1, -1):
@@ -73,8 +69,8 @@ class MyAI( AI ):
 							remains.append((col, row))
 
 				# print(f"remains: {remains}")
-
-				self.guess_action(remains)
+				if remains:
+					self.guess_action(remains)
 		
 		# Return Action() according to different conditions
 		# If all non-mine tiles are found, leave
@@ -87,13 +83,9 @@ class MyAI( AI ):
 
 			self.X, self.Y = self.to_be_uncover.pop(0)
 			self.uncover_count += 1
-			# print(self.uncover_count)
-			# print(self.X, self.Y)
-			# print("REAL:", self.X+1, self.Y+1)
 			return Action(AI.Action.UNCOVER, self.X, self.Y)
 		else:
 			return Action(AI.Action.LEAVE, self.X, self.Y)
-		
 
 	def label_as_safe(self):
 		for dx in [-1, 0, 1]:
@@ -114,14 +106,14 @@ class MyAI( AI ):
 		if effective_label == 0:  # All the remaining tiles are safe, label the remaining adjacent as safe
 			for tile in covered:
 				self.board[tile[1]][tile[0]][0] = 0  # tile[0] = x, tile[1] = y, board[y][x]
-				if (tile[0],tile[1]) not in self.to_be_uncover:
-					self.to_be_uncover.append( (tile[0],tile[1]) )  # append (x,y)
+				if (tile[0], tile[1]) not in self.to_be_uncover:
+					self.to_be_uncover.append( (tile[0], tile[1]) )  # append (x,y)
 			self.board[y][x][1] = 0  # update effectve label as 0
 			self.board[y][x][2] = 0  # remaining = 0
 		elif effective_label == len(covered):  # All the remaining tiles are mine
 			for tile in covered:
 				self.board[tile[1]][tile[0]][0] = -1  # labeled as mine
-				self.remainMines -= 1  # update the remain mines counter
+				self.update_adjacent_effective(tile[0], tile[1])
 			self.board[y][x][1] = 0  # update effectve label as 0
 			self.board[y][x][2] = 0  # remaining = 0
 
@@ -137,13 +129,18 @@ class MyAI( AI ):
 						count_mines += 1
 					elif self.board[nearY][nearX][0] == '_':  # covered and unmarked tiles
 						cover_tiles.append((nearX, nearY))
-		# check if valid
-		# if (count_mines > self.board[y][x][0]) or (len(cover_tiles) == 0 and count_mines < self.board[y][x][0]):
-		# 	return [-1]
-		# valid
 		self.board[y][x][1] = self.board[y][x][0] - count_mines  # update the current tile's effectiveLabel
 		self.board[y][x][2] = len(cover_tiles)  # update the current tile's adjacent counter
 		return cover_tiles
+
+	def update_adjacent_effective(self, x, y):
+		for dx in [-1, 0, 1]:
+			for dy in [-1, 0, 1]:
+				nearX = x + dx
+				nearY = y + dy
+				if (0 <= nearX < self.colDimension) and (0 <= nearY < self.rowDimension) and (nearX != x or nearY != y) \
+					and (self.board[nearY][nearX][1] != " ") and (self.board[nearY][nearX][1] > 0):
+					self.update_effective_covered(nearX, nearY)
 
 	def guess_action(self, covered):
 		mine_prob = {}
@@ -178,41 +175,37 @@ class MyAI( AI ):
 		for row in range(self.rowDimension):
 			for col in range(self.colDimension):
 				# effective label = 1, remaining > 1
-				if (self.board[row][col][1] == 1) and (self.board[row][col][2] > 1):
+				if (self.board[row][col][1] != " ") and (self.board[row][col][1] == 1) and (self.board[row][col][2] > 1):
 					covered = self.update_effective_covered(col, row)
 					if covered not in orlist1:
-						orlist1.append(covered)	
-				elif (self.board[row][col][1] == 2) and (self.board[row][col][2] > 2):
+						orlist1.append(covered)
+				elif (self.board[row][col][1] != " ") and (self.board[row][col][1] == 2) and (self.board[row][col][2] > 2):
 					covered = self.update_effective_covered(col, row)
 					if covered not in orlist2:
 						orlist2.append(covered)
-				elif (self.board[row][col][1] == 3) and (self.board[row][col][2] > 3):
+				elif (self.board[row][col][1] != " ") and (self.board[row][col][1] == 3) and (self.board[row][col][2] > 3):
 					covered = self.update_effective_covered(col, row)
 					if covered not in orlist1:
 						orlist3.append(covered)
-				elif (self.board[row][col][1] == 4) and (self.board[row][col][2] > 4):
+				elif (self.board[row][col][1] != " ") and (self.board[row][col][1] == 4) and (self.board[row][col][2] > 4):
 					covered = self.update_effective_covered(col, row)
 					if covered not in orlist1:
 						orlist4.append(covered)
 		# sort orlist and check if the short one is included by the longer one
 		if orlist1:
 			orlist1.sort(key=len)
-			# print(f"orlist1: {orlist1}")
 			self.include_relation(orlist1, safes)
 		if orlist2:
 			orlist2.sort(key=len)
-			# print(f"orlist2: {orlist2}")
 			self.include_relation(orlist2, safes)
 			self.exclude_mine(orlist1, orlist2)
 		if orlist3:
 			orlist3.sort(key=len)
-			# print(f"orlist3: {orlist3}")
 			self.include_relation(orlist3, safes)
 			self.exclude_mine(orlist2, orlist3)
 			self.exclude_mine(orlist1, orlist3, diff=2)
 		if orlist4:
 			orlist4.sort(key=len)
-			# print(f"orlist4: {orlist4}")
 			self.include_relation(orlist4, safes)
 			self.exclude_mine(orlist3, orlist4)
 			self.exclude_mine(orlist1, orlist4, diff=3)
@@ -232,13 +225,14 @@ class MyAI( AI ):
 							safes.append(tile)  # the longer different ones are safe
 
 	def exclude_mine(self, orlistA, orlistB, diff=1):
-		mines = []
 		for l1 in orlistA:
 			for l2 in orlistB:
 				if (len(l2) - len(l1) == diff) and (set(l1).issubset(set(l2))):
 					for tile in l2:
 						if tile not in l1:
 							self.board[tile[1]][tile[0]][0] = -1
+							# update the adjacent effective label
+							self.update_adjacent_effective(tile[0], tile[1])
 					
 
 	
