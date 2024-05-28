@@ -53,12 +53,6 @@ class MyAI( AI ):
 					if covers:
 						self.check_effective_label(col, row, covers)
 
-		# print board
-		# for i in range(self.rowDimension - 1, -1, -1):
-		# 	row = self.board[i]
-		# 	print("\t".join([f"{col[0]}:{col[1]}:{col[2]}" for col in row]))
-
-
 		if (not self.to_be_uncover) and (self.uncover_count != self.colDimension * self.rowDimension - self.totalMines):
 			self.special_case()
 			if (not self.to_be_uncover):
@@ -67,8 +61,6 @@ class MyAI( AI ):
 					for col in range(self.colDimension):
 						if (self.board[row][col][0] == '_'):
 							remains.append((col, row))
-
-				# print(f"remains: {remains}")
 				if remains:
 					self.guess_action(remains)
 		
@@ -78,9 +70,6 @@ class MyAI( AI ):
 			return Action(AI.Action.LEAVE, self.X, self.Y)
 		# If there's still a remaining non-mine tile, uncover
 		elif self.to_be_uncover:
-
-			# print(self.to_be_uncover)
-
 			self.X, self.Y = self.to_be_uncover.pop(0)
 			self.uncover_count += 1
 			return Action(AI.Action.UNCOVER, self.X, self.Y)
@@ -233,54 +222,3 @@ class MyAI( AI ):
 							self.board[tile[1]][tile[0]][0] = -1
 							# update the adjacent effective label
 							self.update_adjacent_effective(tile[0], tile[1])
-					
-
-	
-	# def model_check(self, covered):
-	# 	print("model_check")
-	# 	# generate all assignment combinations
-	# 	all_assignments = list(itertools.product([0, -1], repeat=len(covered)))
-	# 	valid_assignments = []
-	# 	mine_probs = {}
-	# 	# find valid assignments
-	# 	for assign in all_assignments:
-	# 		print("check assign:", assign)
-	# 		for i in range(len(covered)):
-	# 			x = covered[i][0]
-	# 			y = covered[i][1]
-	# 			self.board[y][x][0] = assign[i]
-	# 		if self.is_valid(assign):
-	# 			valid_assignments.append(assign)
-	# 		# recover to original state (covered)
-	# 		for i in range(len(covered)):
-	# 			x = covered[i][0]
-	# 			y = covered[i][1]
-	# 			self.board[y][x][0] = '_'
-	# 	# calculate prob of mine for each covered tiles
-	# 	for j in range(len(covered)):
-	# 		prob = 0
-	# 		for valid in valid_assignments:
-	# 			if valid[j] == -1:
-	# 				prob += 1
-	# 		mine_probs[covered[j]] = prob
-	# 	# choose min_prob_tile
-	# 	print(f"mine_probs: {mine_probs}")
-	# 	min_prob_tile = min(mine_probs, key=mine_probs.get)
-	# 	print(f"min_prob_tile: {min_prob_tile}")
-	# 	min_x = min_prob_tile[0]
-	# 	min_y = min_prob_tile[1]
-
-	# 	# if (min_x, min_y) not in self.to_be_uncover:  # add to to_be_uncover list
-	# 	# 	self.to_be_uncover.append((min_x, min_y))
-	# 	return (min_x, min_y)
-
-	
-	# def is_valid(self, assignment):
-	# 	for row in range(self.rowDimension):
-	# 		for col in range(self.colDimension):
-	# 			# check uncover tiles with number > 0, effective label > 0
-	# 			if (self.board[row][col][0] != '_') and (self.board[row][col][0] > 0) and (self.board[row][col][1] > 0) and (self.X != col or self.Y != row):
-	# 				checked_valid = self.update_effective_covered(col, row)
-	# 				if checked_valid == [-1]:
-	# 					return False
-	# 	return True
